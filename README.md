@@ -2,7 +2,7 @@
 
 This repository contains the official code for **DEL**, a dynamic speculative decoding strategy that adaptively chooses both the speculation length and exit layer based on runtime confidence and token agreement statistics. DEL improves LLM inference efficiency while preserving output quality.
 
-📰 **ArXiv** — _see preprint [here](./DEL_COLM2025.pdf)_
+📰 **ArXiv** — _see preprint [here](https://arxiv.org/abs/2504.05598)_
 
 ---
 
