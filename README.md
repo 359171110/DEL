@@ -2,7 +2,7 @@
 
 This repository contains the official code for **DEL**, a dynamic speculative decoding strategy that adaptively chooses both the speculation length and exit layer based on runtime confidence and token agreement statistics. DEL improves LLM inference efficiency while preserving output quality.
 
-📰 **ArXiv** — _see preprint [here](https://arxiv.org/abs/2504.05598)_
+📰 **COLM 2025** — _see preprint [here](https://arxiv.org/abs/2504.05598)_
 
 ---
 
@@ -113,7 +113,7 @@ If you use DEL in your work, please cite:
 @inproceedings{entezari2025del,
   title={DEL: Context-Aware Dynamic Exit Layer for Efficient Self-Speculative Decoding},
   author={Entezari Zarch, Hossein and Gao, Lei and Jiang, Chaoyi and Annavaram, Murali},
-  booktitle={arXiv preprint arXiv:2504.05598},
+  booktitle={Proceedings of the Conference on Language Modeling (COLM) 2025},
   year={2025}
 }
 ```
