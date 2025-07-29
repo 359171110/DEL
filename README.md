@@ -1,8 +1,29 @@
-# DEL: Context-Aware Dynamic Exit Layer for Efficient Self-Speculative Decoding
+<img src="assets/logo.svg" alt="DEL" width="90" align="left"><div align="center">
+<h1>&nbsp;DEL: Context-Aware Dynamic Exit Layer for Efficient Self-Speculative Decoding</h1></div>
 
-This repository contains the official code for **DEL**, a dynamic speculative decoding strategy that adaptively chooses both the speculation length and exit layer based on runtime confidence and token agreement statistics. DEL improves LLM inference efficiency while preserving output quality.
+<p align="center">
+<a href="https://arxiv.org/abs/2504.05598">
+  <img src="https://img.shields.io/badge/Arxiv-2504.05598-orange.svg"></a> 
+<a href="https://opensource.org/licenses/Apache-2.0">
+  <img src="https://img.shields.io/badge/License-Apache_2.0-green.svg"></a> 
+<a href="https://github.com/hoenza/DEL/pulls">
+    <img src="https://img.shields.io/badge/Contributions-welcome-blue.svg?style=flat"></a>
+</p>
 
-📰 **COLM 2025** — _see preprint [here](https://arxiv.org/abs/2504.05598)_
+
+## Introduction
+
+**DEL** is a *plug-and-play self-speculative decoding algorithm* that dynamically selects both the **exit layer** and **speculation length** during LLM inference to maximize throughput. Unlike prior methods that rely on fixed hyperparameters or offline tuning, DEL uses real-time token acceptance signals to adaptively configure the draft model for each input.
+
+DEL builds on **LayerSkip**, a self-speculative framework that reuses the early layers of the target model to generate draft tokens. DEL enhances this method by introducing:
+
+- **Token-per-Layer (TPL)**: A metric that balances acceptance rate and computation cost to guide exit layer selection.
+- **Shadow Token Analysis**: Efficient use of cached hidden states to estimate acceptance probabilities for all exit layers simultaneously.
+- **Dynamic Draft Exiting**: A confidence-driven mechanism that determines when to stop drafting tokens, even mid-round.
+
+These components allow DEL to perform on-the-fly optimization of speculative decoding parameters for each prompt and context window.
+
+![DEL](./assets/DEL.png)
 
 ---
 
