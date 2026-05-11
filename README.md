@@ -10,6 +10,15 @@
     <img src="https://img.shields.io/badge/Contributions-welcome-blue.svg?style=flat"></a>
 </p>
 
+## Poster
+
+<p align="center">
+  <img src="assets/DEL-CoLM.png" alt="DEL: Context-Aware Dynamic Exit Layer for Efficient Self-Speculative Decoding Poster" width="100%">
+</p>
+
+<p align="center">
+  <a href="assets/DEL-CoLM.pdf">Download PDF</a>
+</p>
 
 ## Introduction
 
