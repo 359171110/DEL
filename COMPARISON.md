@@ -197,15 +197,15 @@ DEL 在 LayerSkip 模型上达到 2.16×~2.50×，显著高于 SWIFT 的 1.41×~
 # DEL + FLy 主表示例: LLaMA-2-7B on CNN/DM Sum, win_len=6
 CUDA_VISIBLE_DEVICES=0 taskset -c 0-15 torchrun --master_port=29500 benchmark.py \
   --model facebook/layerskip-llama2-7B --dataset cnn_dm_summarization \
-  --generation_strategy DEL_speculative \
+  --generation_strategy DEL_fly_speculative \
   --num_samples 1000 --max_steps 512 \
   --exit_layer 7 --num_speculations 6 \
-  --enable_fly True --fly_win_len 6 \
+  --fly_win_len 6 \
   --output_dir ./logs/ --sample False
 
 # win_len 消融示例
-... --enable_fly True --fly_win_len 4 ...
-... --enable_fly True --fly_win_len 8 ...
+... --generation_strategy DEL_fly_speculative --fly_win_len 4 ...
+... --generation_strategy DEL_fly_speculative --fly_win_len 8 ...
 
 # 一键运行全部实验（含 5 模型 × 7 数据集完整覆盖）
 bash run_benchmarks.sh

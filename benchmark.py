@@ -40,6 +40,7 @@ from self_speculation.generator_base import (
 from self_speculation.self_speculation_generator import SelfSpeculativeGenerationStrategy
 from self_speculation.DELE_speculation_generator import DELESpeculativeGenerationStrategy
 from self_speculation.DEL_speculation_generator import DELSpeculativeGenerationStrategy
+from self_speculation.DEL_fly_speculation_generator import DELFlySpeculativeGenerationStrategy
 from self_speculation.FSM_speculation_generator import FSMSpeculativeGenerationStrategy
 from self_speculation.DV_speculation_generator import DVSpeculativeGenerationStrategy
 from self_speculation.FLy_speculation_generator import FLySpeculativeGenerationStrategy
@@ -190,6 +191,8 @@ def benchmark(
         generation_strategy: GenerationStrategy = DELESpeculativeGenerationStrategy()
     elif generation_config.generation_strategy == "DEL_speculative":
         generation_strategy: GenerationStrategy = DELSpeculativeGenerationStrategy()
+    elif generation_config.generation_strategy == "DEL_fly_speculative":
+        generation_strategy: GenerationStrategy = DELFlySpeculativeGenerationStrategy()
     elif generation_config.generation_strategy == "FSM_speculative":
         generation_strategy: GenerationStrategy = FSMSpeculativeGenerationStrategy()
     elif generation_config.generation_strategy == "DV_speculative":
@@ -277,12 +280,18 @@ def main(args: Arguments, benchmark_arguments: BenchmarkArguments, generation_co
     print(f"Max memory reserved: {max_mem_reserved:.2f} MB")
 
 
-    # Save config and results to file
+    # Save config and results as one valid JSON object.
     with open(output_fname, "w") as f:
-        json.dump(args.__dict__, f)
-        json.dump(benchmark_arguments.__dict__, f)
-        json.dump(generation_config.__dict__, f)
-        json.dump(metric_result, f)
+        json.dump(
+            {
+                "args": args.__dict__,
+                "benchmark_arguments": benchmark_arguments.__dict__,
+                "generation_config": generation_config.__dict__,
+                "metric_result": metric_result,
+            },
+            f,
+            indent=2,
+        )
 
 def process_cli_arguments() -> Tuple[arguments.Arguments, BenchmarkArguments, GenerationConfig]:
     parser = transformers.HfArgumentParser((arguments.Arguments, BenchmarkArguments, GenerationConfig))

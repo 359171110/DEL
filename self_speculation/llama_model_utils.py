@@ -13,11 +13,24 @@ import torch
 import transformers
 from lxml.html.diff import token
 
+
 @dataclass
 class ForwardResult:
     logits: torch.Tensor
     past_key_values: Optional[List[Tuple[torch.Tensor, torch.Tensor]]]
     exit_query_cache: Optional[List[torch.Tensor]] = None
+
+
+def _safe_lm_head(
+    model: transformers.LlamaForCausalLM,
+    hidden_states: torch.Tensor,
+) -> torch.Tensor:
+    if hidden_states.is_cuda and hidden_states.dtype == torch.float16 and hidden_states.shape[1] == 1:
+        # Avoid a CUDA fp16 GEMM crash observed on single-token projections by
+        # padding to two tokens and slicing the original token back out.
+        padded_hidden_states = torch.cat([hidden_states, hidden_states], dim=1)
+        return model.lm_head(padded_hidden_states)[:, :1, :]
+    return model.lm_head(hidden_states)
 
 # Copied from transformers.models.bart.modeling_bart.BartDecoder._prepare_decoder_attention_mask
 def _prepare_decoder_attention_mask(model, attention_mask, input_shape, inputs_embeds, past_key_values_length):
@@ -206,7 +219,7 @@ def forward(
 
     past_key_values = past_key_values.to_legacy_cache()
     hidden_states = model.model.norm(hidden_states)
-    logits = model.lm_head(hidden_states)
+    logits = _safe_lm_head(model, hidden_states)
 
     return ForwardResult(
         logits=logits, past_key_values=past_key_values
@@ -274,7 +287,7 @@ def forward_early(
 
     hidden_states = model.model.norm(hidden_states)
 
-    logits = model.lm_head(hidden_states)
+    logits = _safe_lm_head(model, hidden_states)
     return ForwardResult(
         logits=logits, past_key_values=past_key_values, exit_query_cache=exit_query_cache
     )
@@ -388,7 +401,7 @@ def forward_remainder(
 
     past_key_values = past_key_values.to_legacy_cache()
     hidden_states = model.model.norm(hidden_states)
-    logits = model.lm_head(hidden_states)
+    logits = _safe_lm_head(model, hidden_states)
 
     return ForwardResult(
         logits=logits, past_key_values=past_key_values, exit_query_cache=exit_query_cache
@@ -458,7 +471,7 @@ def forward_early_DEL(
         exit_query_cache = torch.cat([exit_query_cache, hidden_states], dim=1)
 
     hidden_states = model.model.norm(hidden_states)
-    logits = model.lm_head(hidden_states)
+    logits = _safe_lm_head(model, hidden_states)
     
     return ForwardResult(
         logits=logits, past_key_values=past_key_values, exit_query_cache=exit_query_cache

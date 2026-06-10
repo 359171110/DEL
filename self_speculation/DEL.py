@@ -1,12 +1,9 @@
 import torch
 import itertools
-from typing import List, Optional, Tuple
 
 from self_speculation.llama_model_utils import (
     decode_next_token,
 )
-
-
 class DEL:
     def __init__(self, model, gamma_max, eligible_exit_layers=None, omega=1.0, gamma_min=0):
         self.model = model
@@ -21,13 +18,13 @@ class DEL:
             self.eligible_exit_layers = eligible_exit_layers
         self.gamma_max = gamma_max
         self.gamma_min = gamma_min
-        self.cached_hidden_states = [[] for i in range(len(self.model.model.layers))]
+        self.cached_hidden_states = [[] for _ in range(len(self.model.model.layers))]
         self.current_exit_layer = self.eligible_exit_layers[0]+1
         self.current_gamma = 1
 
     def clear_cached_hidden_states(self):
         """Reset cached hidden states for all layers (used at the start of each SD round)."""
-        self.cached_hidden_states = [[] for i in range(len(self.model.model.layers))]
+        self.cached_hidden_states = [[] for _ in range(len(self.model.model.layers))]
     
     def remove_old_hidden_states(self, input_length):
         """

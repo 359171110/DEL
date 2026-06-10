@@ -12,8 +12,6 @@ from typing import List, Optional
 import torch
 
 import transformers
-
-
 @dataclass
 class GenerationStrategyResult:
     predicted_tokens: List[int]

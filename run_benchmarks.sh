@@ -125,10 +125,10 @@ for model in "${!model_params[@]}"; do
       log_name="./bench/bench_${model##*/}_${dataset}_DEL_fly_w${win_len}_1k_${max_steps}_${exit_layer}-${num_speculations}.log"
 
       cmd="CUDA_VISIBLE_DEVICES=$gpu_device taskset -c $cpu_cores torchrun --master_port=$master_port benchmark.py \
-        --model $model --dataset $dataset --generation_strategy DEL_speculative \
+        --model $model --dataset $dataset --generation_strategy DEL_fly_speculative \
         --num_samples $num_samples --max_steps $max_steps \
         --exit_layer $exit_layer --num_speculations $num_speculations \
-        --enable_fly True --fly_win_len $win_len \
+        --fly_win_len $win_len \
         --output_dir $output_dir --sample False >> $log_name"
 
       echo "Running: $cmd"

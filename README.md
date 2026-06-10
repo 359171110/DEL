@@ -47,6 +47,23 @@ conda activate del
 pip install -r requirements.txt
 ```
 
+### 当前环境说明
+
+当前分支保留了一个小范围的 `_safe_lm_head()` workaround，用于规避在本机当前环境下观察到的低精度 `lm_head` CUDA 路径异常：
+
+- 在当前机器上，最小复现实验表明 `lm_head` 的低精度路径存在稳定性问题；
+- `fp16` 主要在单 token `[B, 1, C]` 投影时触发 `SIGFPE`；
+- `bf16` 在当前环境下更不稳定，而 `fp32` 目前实验中正常；
+- 因此当前先保留 `_safe_lm_head()`，以保证 DEL / FLy benchmark 可以稳定跑通。
+
+当前 workaround 位于 [self_speculation/llama_model_utils.py](self_speculation/llama_model_utils.py)，其做法是在 `CUDA + fp16 + seq_len=1` 时，将单 token 投影改写为数学等价的两 token 投影后再切回第一个 token。
+
+请注意：
+
+- 这个 workaround 适合当前阶段的**功能验证和流程跑通**；
+- 它可能会给单步 decode 带来额外计算，因此**不应直接视为最终性能实验实现**；
+- 后续应优先做环境对照实验（PyTorch / CUDA / 驱动组合），若在更稳定的环境中问题消失，应重新评估是否移除该 workaround。
+
 ---
 
 ## 复现主要结果
@@ -158,7 +175,7 @@ bash run_benchmarks.sh
 
 ### 用法
 
-添加 `--enable_fly True` 启用宽松匹配，`--fly_win_len` 控制滑动窗口大小（默认 6）。
+`DEL_speculative` 现在保留为原始 DEL baseline；`DEL_fly_speculative` 是本文的 DEL+FLy 方法。`--fly_win_len` 控制 DEL+FLy 的滑动窗口大小（默认 6）。
 
 ```bash
 # DEL 基线
@@ -169,10 +186,9 @@ python benchmark.py --model facebook/layerskip-llama3.2-1B \
 
 # DEL + FLy
 python benchmark.py --model facebook/layerskip-llama3.2-1B \
-  --dataset gsm8k --generation_strategy DEL_speculative \
+  --dataset gsm8k --generation_strategy DEL_fly_speculative \
   --num_samples 50 --max_steps 512 --sample False \
-  --exit_layer 3 --num_speculations 6 \
-  --enable_fly True --fly_win_len 6
+  --exit_layer 3 --num_speculations 6 --fly_win_len 6
 ```
 
 双模型 FLy 投机解码：
@@ -204,10 +220,11 @@ bash run_benchmarks.sh
 
 | 文件 | 修改内容 |
 |------|---------|
-| `self_speculation/generator_base.py` | 在 `GenerationConfig` 中添加 `enable_fly`、`fly_win_len` 和 `draft_model` |
-| `self_speculation/DEL_speculation_generator.py` | 在 greedy 验证中添加 FLy 滑动窗口宽松接受逻辑 |
+| `self_speculation/generator_base.py` | 在 `GenerationConfig` 中添加 `fly_win_len` 和 `draft_model`（`enable_fly` 仅保留给双模型 FLy 使用） |
+| `self_speculation/DEL_speculation_generator.py` | 保留原始 DEL baseline 实现 |
+| `self_speculation/DEL_fly_speculation_generator.py` | 新增 DEL+FLy 单模型宽松匹配策略 |
 | `self_speculation/FLy_speculation_generator.py` | 新增双模型 FLy 投机解码策略（含精确/宽松两种模式） |
-| `benchmark.py` | 添加 `FLy_speculative` 策略分支及 draft 模型加载 |
+| `benchmark.py` | 添加 `DEL_fly_speculative`、`FLy_speculative` 策略分支及 draft 模型加载 |
 | `run_benchmarks.sh` | 添加 DEL+FLy 扫参、双模型精确/宽松实验配置 |
 | `COMPARISON.md` | 新增对比实验策略文档 |
 
