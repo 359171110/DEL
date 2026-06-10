@@ -56,7 +56,9 @@ class DELSpeculativeGenerationStrategy(GenerationStrategy):
         output_ids: List[int] = []
 
         # DEL Module Definition
-        self.DEL = DEL(model, gamma_max=18, omega=0.95) 
+        self.DEL = DEL(model, gamma_max=18, omega=0.95)
+        self.enable_fly = generation_config.enable_fly
+        self.fly_win_len = generation_config.fly_win_len
        
         # DEL with fixed exit_layer
         # self.DEL = DEL(model, eligible_exit_layers=list(range(generation_config.exit_layer-1, generation_config.exit_layer)), gamma_max=18, omega=0.95) 
@@ -230,6 +232,20 @@ class DELSpeculativeGenerationStrategy(GenerationStrategy):
         # skip verification of the last token as it is a new token predicted from the main model
         verified_tokens = verified_tokens.to(prefill_token_ids)
         verified = draft_output_ids[:, :] == verified_tokens[:, :-1]
+
+        # FLy: loosely accept draft tokens using a sliding window pattern
+        if self.enable_fly and not sample and verified.shape[1] >= self.fly_win_len:
+            original_verified = verified.clone()
+            pattern = torch.ones(self.fly_win_len, dtype=torch.bool, device=verified.device)
+            pattern[0] = False
+            unfold = verified.unfold(1, self.fly_win_len, 1)
+            matched = torch.all(unfold == pattern, dim=-1)
+            fly_mask = torch.zeros_like(verified)
+            fly_mask[:, :matched.shape[1]] = matched
+            verified = verified | fly_mask
+            verified[:, -self.fly_win_len:] = (
+                verified[:, -self.fly_win_len:] & original_verified[:, -self.fly_win_len:]
+            )
 
         # number of matches is the index of the number of tokens we are accepting from the draft
         if not sample:

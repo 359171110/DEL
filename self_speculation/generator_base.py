@@ -44,6 +44,8 @@ class GenerationConfig:
     no_repeat_ngram_size: int = None
     stop_words: List[str] = None
     stop_token_ids: List[int] = None
+    enable_fly: bool = False
+    fly_win_len: int = 6
 
     def __post_init__(self):
         if self.stop_token_ids is None:

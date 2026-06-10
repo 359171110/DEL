@@ -18,6 +18,9 @@ datasets=("aqua_rat" "cnn_dm_lm" "cnn_dm_summarization" "xsum_summarization" "hu
 # Define generation strategies
 strategies=("self_speculative" "DEL_speculative" "FSM_speculative" "DV_speculative" "autoregressive")
 
+# FLy win_len values to sweep
+fly_win_lens=(4 6 8)
+
 # Define master port
 master_port=29500
 
@@ -63,6 +66,30 @@ for model in "${!model_params[@]}"; do
       fi
 
       # Print and execute the command
+      echo "Running: $cmd"
+      eval $cmd
+    done
+  done
+done
+
+# DEL + FLy experiments (sweep over win_len)
+for model in "${!model_params[@]}"; do
+  params=(${model_params[$model]})
+  gpu_device=${params[0]}
+  exit_layer=${params[1]}
+  num_speculations=${params[2]}
+
+  for dataset in "${datasets[@]}"; do
+    for win_len in "${fly_win_lens[@]}"; do
+      log_name="./bench/bench_${model##*/}_${dataset}_DEL_fly_w${win_len}_1k_${max_steps}_${exit_layer}-${num_speculations}.log"
+
+      cmd="CUDA_VISIBLE_DEVICES=$gpu_device taskset -c $cpu_cores torchrun --master_port=$master_port benchmark.py \
+        --model $model --dataset $dataset --generation_strategy DEL_speculative \
+        --num_samples $num_samples --max_steps $max_steps \
+        --exit_layer $exit_layer --num_speculations $num_speculations \
+        --enable_fly True --fly_win_len $win_len \
+        --output_dir $output_dir --sample False >> $log_name"
+
       echo "Running: $cmd"
       eval $cmd
     done
