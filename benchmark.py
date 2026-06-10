@@ -42,6 +42,7 @@ from self_speculation.DELE_speculation_generator import DELESpeculativeGeneratio
 from self_speculation.DEL_speculation_generator import DELSpeculativeGenerationStrategy
 from self_speculation.FSM_speculation_generator import FSMSpeculativeGenerationStrategy
 from self_speculation.DV_speculation_generator import DVSpeculativeGenerationStrategy
+from self_speculation.FLy_speculation_generator import FLySpeculativeGenerationStrategy
 
 
 torch.cuda.reset_peak_memory_stats()
@@ -193,6 +194,19 @@ def benchmark(
         generation_strategy: GenerationStrategy = FSMSpeculativeGenerationStrategy()
     elif generation_config.generation_strategy == "DV_speculative":
         generation_strategy: GenerationStrategy = DVSpeculativeGenerationStrategy()
+    elif generation_config.generation_strategy == "FLy_speculative":
+        generation_strategy: GenerationStrategy = FLySpeculativeGenerationStrategy()
+        if generation_config.draft_model:
+            draft_model = transformers.AutoModelForCausalLM.from_pretrained(
+                generation_config.draft_model,
+                use_safetensors=True,
+                device_map="auto",
+                torch_dtype=torch.float16,
+            )
+            draft_model.eval()
+            generation_strategy.draft_model = draft_model
+        else:
+            raise ValueError("FLy_speculative requires --draft_model")
     else:
         raise Exception(
             f"Unsupported generation strategy: {generation_config.generation_strategy}"

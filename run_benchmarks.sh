@@ -72,6 +72,47 @@ for model in "${!model_params[@]}"; do
   done
 done
 
+# Two-model draft-target pairs (draft → target)
+declare -A draft_for_target
+draft_for_target["facebook/layerskip-llama3-8B"]="facebook/layerskip-llama3.2-1B"
+draft_for_target["facebook/layerskip-llama2-13B"]="facebook/layerskip-llama2-7B"
+draft_for_target["facebook/layerskip-llama2-70B"]="facebook/layerskip-llama2-7B"
+
+# Two-model speculative decoding: exact match vs FLy
+for target_model in "${!draft_for_target[@]}"; do
+  draft_model=${draft_for_target[$target_model]}
+  params=(${model_params[$target_model]})
+  gpu_device=${params[0]}
+  num_speculations=${params[2]}
+
+  for dataset in "${datasets[@]}"; do
+    # Two-model exact match
+    log_name="./bench/bench_${target_model##*/}_${dataset}_FLy_exact_1k_${max_steps}.log"
+    cmd="CUDA_VISIBLE_DEVICES=$gpu_device taskset -c $cpu_cores torchrun --master_port=$master_port benchmark.py \
+      --model $target_model --dataset $dataset --generation_strategy FLy_speculative \
+      --draft_model $draft_model \
+      --num_samples $num_samples --max_steps $max_steps \
+      --num_speculations $num_speculations \
+      --output_dir $output_dir --sample False >> $log_name"
+    echo "Running: $cmd"
+    eval $cmd
+
+    # Two-model FLy loosely match (sweep win_len)
+    for win_len in "${fly_win_lens[@]}"; do
+      log_name="./bench/bench_${target_model##*/}_${dataset}_FLy_loose_w${win_len}_1k_${max_steps}.log"
+      cmd="CUDA_VISIBLE_DEVICES=$gpu_device taskset -c $cpu_cores torchrun --master_port=$master_port benchmark.py \
+        --model $target_model --dataset $dataset --generation_strategy FLy_speculative \
+        --draft_model $draft_model \
+        --num_samples $num_samples --max_steps $max_steps \
+        --num_speculations $num_speculations \
+        --enable_fly True --fly_win_len $win_len \
+        --output_dir $output_dir --sample False >> $log_name"
+      echo "Running: $cmd"
+      eval $cmd
+    done
+  done
+done
+
 # DEL + FLy experiments (sweep over win_len)
 for model in "${!model_params[@]}"; do
   params=(${model_params[$model]})

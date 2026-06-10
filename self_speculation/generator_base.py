@@ -46,6 +46,7 @@ class GenerationConfig:
     stop_token_ids: List[int] = None
     enable_fly: bool = False
     fly_win_len: int = 6
+    draft_model: str = None
 
     def __post_init__(self):
         if self.stop_token_ids is None:
