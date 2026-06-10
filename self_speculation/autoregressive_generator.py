@@ -25,7 +25,7 @@ from self_speculation.llama_model_utils import (
 class AutoRegressiveGenerationStrategy(GenerationStrategy):
     def generate_token_ids(
         self,
-        model: transformers.LlamaForCausalLM,
+        model: torch.nn.Module,
         input_ids: List[int],
         eos_token_ids: List[int],
         generation_config: GenerationConfig,

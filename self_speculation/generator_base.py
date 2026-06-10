@@ -47,6 +47,8 @@ class GenerationConfig:
     enable_fly: bool = False
     fly_win_len: int = 6
     draft_model: str = None
+    skip_layer_ids: str = None
+    skip_ratio: float = 0.5
 
     def __post_init__(self):
         if self.stop_token_ids is None:
@@ -55,13 +57,13 @@ class GenerationConfig:
 class GenerationStrategy:
     def generate_token_ids(
         self,
-        model: transformers.LlamaForCausalLM,
+        model: torch.nn.Module,
         input_ids: List[int],
         eos_token_ids: List[int],
         generation_config: GenerationConfig,
         logits_processors: Optional[transformers.generation.logits_process.LogitsProcessorList] = None,
         stopping_criteria: Optional[transformers.StoppingCriteriaList] = None,
-        streamer: Optional[transformers.TextStreamer] = None,  
+        streamer: Optional[transformers.TextStreamer] = None,
     ) -> GenerationStrategyResult:
         raise NotImplementedError()
 
@@ -69,8 +71,8 @@ class GenerationStrategy:
 class HuggingfaceLlamaGenerator:
     def __init__(
         self,
-        tokenizer: transformers.LlamaTokenizer,
-        model: transformers.LlamaForCausalLM,
+        tokenizer: transformers.PreTrainedTokenizerBase,
+        model: torch.nn.Module,
         generation_strategy: GenerationStrategy,
     ) -> None:
         super().__init__()

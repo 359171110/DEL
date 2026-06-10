@@ -43,6 +43,7 @@ from self_speculation.DEL_speculation_generator import DELSpeculativeGenerationS
 from self_speculation.FSM_speculation_generator import FSMSpeculativeGenerationStrategy
 from self_speculation.DV_speculation_generator import DVSpeculativeGenerationStrategy
 from self_speculation.FLy_speculation_generator import FLySpeculativeGenerationStrategy
+from self_speculation.SWIFT_speculation_generator import SWIFTSpeculativeGenerationStrategy
 
 
 torch.cuda.reset_peak_memory_stats()
@@ -207,6 +208,8 @@ def benchmark(
             generation_strategy.draft_model = draft_model
         else:
             raise ValueError("FLy_speculative requires --draft_model")
+    elif generation_config.generation_strategy == "SWIFT_speculative":
+        generation_strategy: GenerationStrategy = SWIFTSpeculativeGenerationStrategy()
     else:
         raise Exception(
             f"Unsupported generation strategy: {generation_config.generation_strategy}"

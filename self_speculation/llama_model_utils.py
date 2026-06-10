@@ -157,7 +157,7 @@ def crop_past_key_values(
 # To ensure an apples to apples comparison, we created this forward function to use in autoregressive decoding to ensure it uses the same KV cache implementation instead.
 # FIXME: update forward_early(...) and forward_remainder(...) to use the updated more efficient KV cache implementation.
 def forward(
-    model: transformers.LlamaForCausalLM,
+    model: torch.nn.Module,
     input_ids: torch.Tensor,
     past_key_values: Optional[List[Tuple[torch.Tensor, torch.Tensor]]],
 ) -> ForwardResult:
@@ -213,9 +213,79 @@ def forward(
     )
 
 
+def forward_skip_layers(
+    model: torch.nn.Module,
+    input_ids: torch.Tensor,
+    past_key_values: Optional[List[Tuple[torch.Tensor, torch.Tensor]]],
+    skip_layer_ids: set,
+) -> ForwardResult:
+    device = input_ids.device
+    batch_size, seq_length = input_ids.shape
+
+    seq_length_with_past = seq_length
+    past_key_values_length = 0
+
+    if past_key_values is not None:
+        past_key_values_length = past_key_values[0][0].shape[2]
+        seq_length_with_past = seq_length_with_past + past_key_values_length
+    past_key_values = transformers.cache_utils.DynamicCache.from_legacy_cache(past_key_values)
+
+    position_ids = torch.arange(
+        past_key_values_length,
+        seq_length + past_key_values_length,
+        dtype=torch.long,
+        device=device,
+    )
+    position_ids = position_ids.unsqueeze(0).view(-1, seq_length)
+    attention_mask = input_ids.new_ones(
+        (batch_size, seq_length_with_past),
+        dtype=torch.bool,
+    )
+    inputs_embeds = model.model.embed_tokens(input_ids)
+    attention_mask = _prepare_decoder_attention_mask(
+        model,
+        attention_mask,
+        (batch_size, seq_length),
+        inputs_embeds,
+        past_key_values_length,
+    )
+
+    num_kv_heads = getattr(model.config, 'num_key_value_heads', model.config.num_attention_heads)
+    head_dim = model.config.hidden_size // model.config.num_attention_heads
+
+    hidden_states = inputs_embeds
+    for idx, decoder_layer in enumerate(model.model.layers):
+        if idx in skip_layer_ids:
+            if len(past_key_values.key_cache) <= idx:
+                dummy = torch.zeros(
+                    batch_size, num_kv_heads, 0, head_dim,
+                    device=device, dtype=hidden_states.dtype,
+                )
+                past_key_values.key_cache.append(dummy)
+                past_key_values.value_cache.append(dummy)
+            continue
+        hidden_states, past_key_values = decoder_layer(
+            hidden_states,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_value=past_key_values,
+            output_attentions=False,
+            use_cache=True,
+            padding_mask=None,
+        )
+
+    past_key_values = past_key_values.to_legacy_cache()
+    hidden_states = model.model.norm(hidden_states)
+    logits = model.lm_head(hidden_states)
+
+    return ForwardResult(
+        logits=logits, past_key_values=past_key_values
+    )
+
+
 # TODO: update forward_early(...) to use transformers' new KV cache implementation rather than legacy.
 def forward_early(
-    model: transformers.LlamaForCausalLM,
+    model: torch.nn.Module,
     input_ids: torch.Tensor,
     past_key_values: Optional[List[Tuple[torch.Tensor, torch.Tensor]]],
     exit_layer: int,
@@ -282,7 +352,7 @@ def forward_early(
 
 # TODO: update forward_remainder(...) to use transformers' new KV cache implementation rather than legacy.
 def forward_remainder(
-    model: transformers.LlamaForCausalLM,
+    model: torch.nn.Module,
     input_ids: torch.Tensor,
     past_key_values: Optional[List[Tuple[torch.Tensor, torch.Tensor]]],
     exit_layer: int,
@@ -397,7 +467,7 @@ def forward_remainder(
 
 # TODO: update forward_early(...) to use transformers' new KV cache implementation rather than legacy.
 def forward_early_DEL(
-    model: transformers.LlamaForCausalLM,
+    model: torch.nn.Module,
     input_ids: torch.Tensor,
     past_key_values: Optional[List[Tuple[torch.Tensor, torch.Tensor]]],
     exit_layer: int,
@@ -467,7 +537,7 @@ def forward_early_DEL(
 
 # TODO: update forward_remainder(...) to use transformers' new KV cache implementation rather than legacy.
 def forward_remainder_DEL(
-    model: transformers.LlamaForCausalLM,
+    model: torch.nn.Module,
     input_ids: torch.Tensor,
     past_key_values: Optional[List[Tuple[torch.Tensor, torch.Tensor]]],
     exit_layer: int,

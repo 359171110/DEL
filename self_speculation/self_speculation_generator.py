@@ -31,7 +31,7 @@ def max_fn(x, eps=1e-6):
 class SelfSpeculativeGenerationStrategy(GenerationStrategy):
     def generate_token_ids(
         self,
-        model: transformers.LlamaForCausalLM,
+        model: torch.nn.Module,
         input_ids: List[int],
         eos_token_ids: List[int],
         generation_config: GenerationConfig,
@@ -107,7 +107,7 @@ class SelfSpeculativeGenerationStrategy(GenerationStrategy):
     # TODO: remove calls, input_ids_list, rely on generation config
     def single_step_speculation(
         self,
-        model: transformers.LlamaForCausalLM,
+        model: torch.nn.Module,
         input_ids: torch.Tensor,
         input_ids_list: List[int],
         output_ids: List[int],

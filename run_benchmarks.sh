@@ -136,3 +136,46 @@ for model in "${!model_params[@]}"; do
     done
   done
 done
+
+# ============================================================
+# SWIFT (layer-skipping) self-speculative decoding experiments
+# Uses standard (non-LayerSkip) models
+# ============================================================
+
+declare -A swift_model_params
+# Format: "GPU num_speculations skip_ratio"
+swift_model_params["meta-llama/Llama-2-7b-hf"]="0 6 0.5"
+swift_model_params["meta-llama/Llama-2-13b-hf"]="0 6 0.5"
+
+# SWIFT baseline + SWIFT + FLy sweep
+for model in "${!swift_model_params[@]}"; do
+  params=(${swift_model_params[$model]})
+  gpu_device=${params[0]}
+  num_speculations=${params[1]}
+  skip_ratio=${params[2]}
+
+  for dataset in "${datasets[@]}"; do
+    # SWIFT baseline (no FLy)
+    log_name="./bench/bench_${model##*/}_${dataset}_SWIFT_baseline_1k_${max_steps}.log"
+    cmd="CUDA_VISIBLE_DEVICES=$gpu_device taskset -c $cpu_cores torchrun --master_port=$master_port benchmark.py \
+      --model $model --dataset $dataset --generation_strategy SWIFT_speculative \
+      --num_samples $num_samples --max_steps $max_steps \
+      --num_speculations $num_speculations --skip_ratio $skip_ratio \
+      --output_dir $output_dir --sample False >> $log_name"
+    echo "Running: $cmd"
+    eval $cmd
+
+    # SWIFT + FLy (sweep win_len)
+    for win_len in "${fly_win_lens[@]}"; do
+      log_name="./bench/bench_${model##*/}_${dataset}_SWIFT_fly_w${win_len}_1k_${max_steps}.log"
+      cmd="CUDA_VISIBLE_DEVICES=$gpu_device taskset -c $cpu_cores torchrun --master_port=$master_port benchmark.py \
+        --model $model --dataset $dataset --generation_strategy SWIFT_speculative \
+        --num_samples $num_samples --max_steps $max_steps \
+        --num_speculations $num_speculations --skip_ratio $skip_ratio \
+        --enable_fly True --fly_win_len $win_len \
+        --output_dir $output_dir --sample False >> $log_name"
+      echo "Running: $cmd"
+      eval $cmd
+    done
+  done
+done
