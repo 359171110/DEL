@@ -135,6 +135,51 @@ We benchmark DEL using:
 
 ---
 
+## FLy Integration: Loosely Self-Speculative Decoding
+
+This fork integrates [FLy (Training-Free Loosely Speculative Decoding)](https://arxiv.org/abs/2511.22972) into DEL, combining **self-speculative drafting** with **loosely verification** to further improve acceptance rates.
+
+### Motivation
+
+In standard speculative decoding, a draft token that doesn't exactly match the target model's prediction causes all subsequent tokens to be discarded. FLy relaxes this constraint: if a rejected token is followed by `win_len-1` consecutive accepted tokens, the rejection is overturned — the surrounding context confirms it is semantically correct.
+
+Self-speculative methods like DEL use a weaker draft (fewer layers), so their exact-match acceptance rate is inherently lower than two-model speculative decoding. FLy's loosely matching compensates for this, accepting more tokens per round without any extra model or training.
+
+### Usage
+
+Add `--enable_fly True` to enable loosely matching. `--fly_win_len` controls the sliding window size (default 6).
+
+```bash
+# DEL baseline
+python benchmark.py --model facebook/layerskip-llama3.2-1B \
+  --dataset gsm8k --generation_strategy DEL_speculative \
+  --num_samples 50 --max_steps 512 --sample False \
+  --exit_layer 3 --num_speculations 6
+
+# DEL + FLy
+python benchmark.py --model facebook/layerskip-llama3.2-1B \
+  --dataset gsm8k --generation_strategy DEL_speculative \
+  --num_samples 50 --max_steps 512 --sample False \
+  --exit_layer 3 --num_speculations 6 \
+  --enable_fly True --fly_win_len 6
+```
+
+To run the full DEL+FLy sweep (win_len ∈ {4, 6, 8}) across all models and datasets:
+
+```bash
+bash run_benchmarks.sh
+```
+
+### Changed Files
+
+| File | Change |
+|------|--------|
+| `self_speculation/generator_base.py` | Added `enable_fly` and `fly_win_len` to `GenerationConfig` |
+| `self_speculation/DEL_speculation_generator.py` | Added FLy sliding-window loosely acceptance in greedy verification |
+| `run_benchmarks.sh` | Added DEL+FLy experiment configurations |
+
+---
+
 ## 📄 Cite Us
 
 If you use DEL in your work, please cite:
