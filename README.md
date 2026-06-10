@@ -1,5 +1,5 @@
 <img src="assets/logo.svg" alt="DEL" width="90" align="left"><div align="center">
-<h1>&nbsp;DEL: Context-Aware Dynamic Exit Layer for Efficient Self-Speculative Decoding</h1></div>
+<h1>&nbsp;DEL: 基于上下文感知的动态退出层高效自投机解码</h1></div>
 
 <p align="center">
 <a href="https://arxiv.org/abs/2504.05598">
@@ -10,82 +10,84 @@
     <img src="https://img.shields.io/badge/Contributions-welcome-blue.svg?style=flat"></a>
 </p>
 
-## Poster
+## 海报
 
 <p align="center">
   <img src="assets/DEL-CoLM.png" alt="DEL: Context-Aware Dynamic Exit Layer for Efficient Self-Speculative Decoding Poster" width="100%">
 </p>
 
 <p align="center">
-  <a href="assets/DEL-CoLM.pdf">Download PDF</a>
+  <a href="assets/DEL-CoLM.pdf">下载 PDF</a>
 </p>
 
-## Introduction
+## 简介
 
-**DEL** is a *plug-and-play self-speculative decoding algorithm* that dynamically selects both the **exit layer** and **speculation length** during LLM inference to maximize throughput. Unlike prior methods that rely on fixed hyperparameters or offline tuning, DEL uses real-time token acceptance signals to adaptively configure the draft model for each input.
+**DEL** 是一种*即插即用的自投机解码算法*，在 LLM 推理过程中动态选择**退出层**和**投机长度**以最大化吞吐量。与依赖固定超参数或离线调优的方法不同，DEL 利用实时的 token 接受信号自适应地为每个输入配置 draft 模型。
 
-DEL builds on **LayerSkip**, a self-speculative framework that reuses the early layers of the target model to generate draft tokens. DEL enhances this method by introducing:
+DEL 基于 **LayerSkip** 构建，这是一种自投机框架，复用目标模型的早期层来生成 draft token。DEL 通过以下方式增强了该方法：
 
-- **Token-per-Layer (TPL)**: A metric that balances acceptance rate and computation cost to guide exit layer selection.
-- **Shadow Token Analysis**: Efficient use of cached hidden states to estimate acceptance probabilities for all exit layers simultaneously.
-- **Dynamic Draft Exiting**: A confidence-driven mechanism that determines when to stop drafting tokens, even mid-round.
+- **Token-per-Layer (TPL)**：一种平衡接受率与计算成本的指标，用于指导退出层选择。
+- **Shadow Token 分析**：高效利用缓存的隐藏状态，同时估计所有退出层的接受概率。
+- **动态 Draft 退出**：一种基于置信度的机制，在投机轮次中途决定何时停止生成 draft token。
 
-These components allow DEL to perform on-the-fly optimization of speculative decoding parameters for each prompt and context window.
+这些组件使 DEL 能够针对每个 prompt 和上下文窗口进行实时的投机解码参数优化。
 
 ![DEL](./assets/DEL.png)
 
 ---
 
-## 🔧 Installation
+## 安装
 
 ```bash
-# Setup Conda environment
+# 创建 Conda 环境
 conda create --name del python=3.10
 conda activate del
 
-# Install dependencies
+# 安装依赖
 pip install -r requirements.txt
 ```
 
 ---
 
-## 🚀 Reproduce Main Results
+## 复现主要结果
 
-Run the full benchmark suite using:
+运行完整 benchmark 套件：
 
 ```bash
 bash run_benchmarks.sh
 ```
 
-This script evaluates DEL and several baselines (`self_speculative`, `FSM_speculative`, `DV_speculative`, `autoregressive`) across 7 datasets and multiple LayerSkip LLaMA variants.
+该脚本在 7 个数据集和多个 LayerSkip LLaMA 变体上评估 DEL 及若干基线方法（`self_speculative`、`FSM_speculative`、`DV_speculative`、`autoregressive`）。
 
-- Logs will be saved under `./logs/`
-- You can modify `run_benchmarks.sh` to adjust `num_samples`, `max_steps`, or target models.
+- 日志保存在 `./logs/` 目录下
+- 可修改 `run_benchmarks.sh` 中的 `num_samples`、`max_steps` 或目标模型
 
 ---
 
-## 📁 Project Structure
+## 项目结构
 
 ```
 .
-├── benchmark.py                # Main benchmarking entry point
-├── arguments.py                # Argument parser for benchmarking and generation
-├── generate.py                 # Generation script for non-benchmarking use
-├── eval.py                     # Evaluation and scoring utilities
-├── correctness.py              # Unit-level checks for speculative correctness
-├── sweep.py                    # Hyperparameter sweep support
-├── utils.py                    # Miscellaneous utilities
-├── run_benchmarks.sh           # Shell script to reproduce all benchmarks
+├── benchmark.py                # 主 benchmark 入口
+├── arguments.py                # benchmark 和生成的参数解析
+├── generate.py                 # 非 benchmark 用途的生成脚本
+├── eval.py                     # 评估和打分工具
+├── correctness.py              # 投机正确性的单元级检查
+├── sweep.py                    # 超参数搜索支持
+├── utils.py                    # 杂项工具
+├── run_benchmarks.sh           # 复现所有 benchmark 的 Shell 脚本
 ├── requirements.txt
+├── COMPARISON.md               # 对比实验策略文档（中文）
 ├── README.md
-└── self_speculation/           # All generation strategies implemented here
-    ├── DEL.py                           # Dynamic Exit Layer (DEL) core logic
-    ├── DEL_speculation_generator.py     # DEL-based generation
-    ├── DV_speculation_generator.py      # Draft&Verify speculative decoding baseline
-    ├── DELE_speculation_generator.py    # DEL without dynamic draft exiting variant
-    ├── FSM_speculation_generator.py     # FSM speculation baseline
-    ├── autoregressive_generator.py      # Vanilla greedy decoding
-    ├── self_speculation_generator.py    # Standard self speculative decoding
+└── self_speculation/           # 所有生成策略的实现
+    ├── DEL.py                           # 动态退出层 (DEL) 核心逻辑
+    ├── DEL_speculation_generator.py     # 基于 DEL 的生成（支持 FLy）
+    ├── DV_speculation_generator.py      # Draft&Verify 投机解码基线
+    ├── DELE_speculation_generator.py    # DEL 无动态 draft 退出变体
+    ├── FSM_speculation_generator.py     # FSM 投机基线
+    ├── FLy_speculation_generator.py     # 双模型 FLy 投机解码
+    ├── autoregressive_generator.py      # 普通贪心解码
+    ├── self_speculation_generator.py    # 标准自投机解码
     ├── generator_base.py                
     ├── llama_model_utils.py             
     └── speculative_streamer.py          
@@ -93,64 +95,73 @@ This script evaluates DEL and several baselines (`self_speculative`, `FSM_specul
 
 ---
 
-## 📊 Datasets and Models
+## 数据集与模型
 
-We benchmark DEL using:
+### 模型
 
-**Models**
 - `facebook/layerskip-llama3.2-1B`
 - `facebook/layerskip-llama3-8B`
 - `facebook/layerskip-llama2-[7B,13B,70B]`
 
-**Datasets**
-- `gsm8k`, `aqua_rat` (math reasoning)
-- `cnn_dm_lm`, `cnn_dm_summarization`, `xsum_summarization` (long-form/text)
-- `wmt14_de_en` (translation)
-- `human_eval` (code generation)
+### 数据集
+
+- `gsm8k`、`aqua_rat`（数学推理）
+- `cnn_dm_lm`、`cnn_dm_summarization`、`xsum_summarization`（长文本/摘要）
+- `wmt14_de_en`（翻译）
+- `human_eval`（代码生成）
 
 ---
 
-## 🧠 Key Features
+## 核心特性
 
-- **DEL: Dynamic Exit Layer**  
-  A plug-and-play module for LayerSkip that dynamically selects the exit layer and speculation length per generation round based on real-time context.
+- **DEL：动态退出层**  
+  LayerSkip 的即插即用模块，根据实时上下文动态选择每个生成轮次的退出层和投机长度。
 
-- **Context-Aware Adaptation**  
-  Tracks token-level acceptance rates across layers and uses a confidence-aware thresholding mechanism to adapt speculation dynamically.
+- **上下文感知自适应**  
+  跟踪跨层的 token 级接受率，使用基于置信度的阈值机制动态调整投机策略。
 
-- **Token-per-Layer (TPL) Optimization**  
-  Introduces a novel efficiency metric, TPL, to guide the optimal choice of exit layer and speculation length with negligible overhead.
+- **Token-per-Layer (TPL) 优化**  
+  引入新的效率指标 TPL，以极低的开销指导退出层和投机长度的最优选择。
 
-- **Shadow Token Analysis**  
-  Computes expected acceptance rates using cached hidden states and shadow tokens, without any additional forward passes through the model.
+- **Shadow Token 分析**  
+  利用缓存的隐藏状态和 shadow token 计算预期接受率，无需额外的模型前向传播。
 
-- **Streaming & Scalability**  
-  Efficient across diverse tasks (reasoning, summarization, code) and scales from 1B to 70B LLMs, with up to **2.84× speedup** over greedy decoding.
+- **流式生成与可扩展性**  
+  在多种任务（推理、摘要、代码）上高效运行，从 1B 到 70B 的 LLM 均可扩展，最高可达 **2.84 倍加速**。
 
-- **Fully Compatible with LayerSkip**  
-  Seamlessly integrates with early-exit models without any retraining or architectural changes.
+- **完全兼容 LayerSkip**  
+  无需重新训练或修改架构即可无缝集成早退模型。
 
-- **Lightweight & Practical**  
-  Adds minimal runtime and memory overhead (~1–2%), making it suitable for real-world deployment.
+- **轻量且实用**  
+  运行时和显存开销极小（约 1-2%），适合实际部署。
 
 ---
 
-## FLy Integration: Loosely Self-Speculative Decoding
+## FLy 集成：宽松自投机解码
 
-This fork integrates [FLy (Training-Free Loosely Speculative Decoding)](https://arxiv.org/abs/2511.22972) into DEL, combining **self-speculative drafting** with **loosely verification** to further improve acceptance rates.
+本分支集成了 [FLy (Training-Free Loosely Speculative Decoding)](https://arxiv.org/abs/2511.22972) 到 DEL 中，将**自投机 draft 生成**与**宽松验证**结合，进一步提升接受率。
 
-### Motivation
+### 动机
 
-In standard speculative decoding, a draft token that doesn't exactly match the target model's prediction causes all subsequent tokens to be discarded. FLy relaxes this constraint: if a rejected token is followed by `win_len-1` consecutive accepted tokens, the rejection is overturned — the surrounding context confirms it is semantically correct.
+在标准投机解码中，一个不精确匹配目标模型预测的 draft token 会导致其后所有 token 被丢弃。FLy 放宽了这一约束：如果一个被拒绝的 token 后面紧跟 `win_len-1` 个连续被接受的 token，则该拒绝被推翻——周围的上下文确认它在语义上是正确的。
 
-Self-speculative methods like DEL use a weaker draft (fewer layers), so their exact-match acceptance rate is inherently lower than two-model speculative decoding. FLy's loosely matching compensates for this, accepting more tokens per round without any extra model or training.
+自投机方法（如 DEL）使用较弱的 draft（更少的层），因此其精确匹配接受率天然低于双模型投机解码。FLy 的宽松匹配弥补了这一点，在不引入额外模型或训练的情况下每轮接受更多 token。
 
-### Usage
+### 2x2 对比框架
 
-Add `--enable_fly True` to enable loosely matching. `--fly_win_len` controls the sliding window size (default 6).
+| | 精确匹配验证 | 宽松匹配验证 (FLy) |
+|---|---|---|
+| **自投机（单模型）** | DEL 基线 | **DEL + FLy（本文方法）** |
+| **双模型投机** | FLy exact 基线 | FLy loosely 基线 |
+
+详细对比策略见 [COMPARISON.md](COMPARISON.md)。
+
+### 用法
+
+添加 `--enable_fly True` 启用宽松匹配，`--fly_win_len` 控制滑动窗口大小（默认 6）。
 
 ```bash
-# DEL baseline
+# DEL 基线
 python benchmark.py --model facebook/layerskip-llama3.2-1B \
   --dataset gsm8k --generation_strategy DEL_speculative \
   --num_samples 50 --max_steps 512 --sample False \
@@ -164,25 +175,47 @@ python benchmark.py --model facebook/layerskip-llama3.2-1B \
   --enable_fly True --fly_win_len 6
 ```
 
-To run the full DEL+FLy sweep (win_len ∈ {4, 6, 8}) across all models and datasets:
+双模型 FLy 投机解码：
+
+```bash
+# 双模型精确匹配
+python benchmark.py --model facebook/layerskip-llama3-8B \
+  --dataset gsm8k --generation_strategy FLy_speculative \
+  --draft_model facebook/layerskip-llama3.2-1B \
+  --num_samples 50 --max_steps 512 --sample False \
+  --num_speculations 3
+
+# 双模型 FLy 宽松匹配
+python benchmark.py --model facebook/layerskip-llama3-8B \
+  --dataset gsm8k --generation_strategy FLy_speculative \
+  --draft_model facebook/layerskip-llama3.2-1B \
+  --num_samples 50 --max_steps 512 --sample False \
+  --num_speculations 3 \
+  --enable_fly True --fly_win_len 6
+```
+
+运行完整 DEL+FLy 扫参实验（win_len ∈ {4, 6, 8}）以及双模型对比实验：
 
 ```bash
 bash run_benchmarks.sh
 ```
 
-### Changed Files
+### 修改的文件
 
-| File | Change |
-|------|--------|
-| `self_speculation/generator_base.py` | Added `enable_fly` and `fly_win_len` to `GenerationConfig` |
-| `self_speculation/DEL_speculation_generator.py` | Added FLy sliding-window loosely acceptance in greedy verification |
-| `run_benchmarks.sh` | Added DEL+FLy experiment configurations |
+| 文件 | 修改内容 |
+|------|---------|
+| `self_speculation/generator_base.py` | 在 `GenerationConfig` 中添加 `enable_fly`、`fly_win_len` 和 `draft_model` |
+| `self_speculation/DEL_speculation_generator.py` | 在 greedy 验证中添加 FLy 滑动窗口宽松接受逻辑 |
+| `self_speculation/FLy_speculation_generator.py` | 新增双模型 FLy 投机解码策略（含精确/宽松两种模式） |
+| `benchmark.py` | 添加 `FLy_speculative` 策略分支及 draft 模型加载 |
+| `run_benchmarks.sh` | 添加 DEL+FLy 扫参、双模型精确/宽松实验配置 |
+| `COMPARISON.md` | 新增对比实验策略文档 |
 
 ---
 
-## 📄 Cite Us
+## 引用
 
-If you use DEL in your work, please cite:
+如果您在研究中使用了 DEL，请引用：
 
 ```bibtex
 @inproceedings{entezari2025del,
@@ -194,6 +227,6 @@ If you use DEL in your work, please cite:
 ```
 ---
 
-## 🤝 Acknowledgements
+## 致谢
 
-- LayerSkip models provided by [Meta AI](https://github.com/facebookresearch/LayerSkip).
+- LayerSkip 模型由 [Meta AI](https://github.com/facebookresearch/LayerSkip) 提供。
